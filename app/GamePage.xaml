@@ -1,0 +1,26 @@
+<Page
+    x:Class="Lumidlet.GamePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:win2d="using:Microsoft.Graphics.Canvas.UI.Xaml"
+    Background="Black">
+    <Grid x:Name="Root" Background="Black">
+        <win2d:CanvasControl x:Name="Screen" ClearColor="Black" Draw="Screen_Draw"
+                             PointerPressed="Screen_PointerPressed" PointerMoved="Screen_PointerMoved"
+                             PointerReleased="Screen_PointerReleased" PointerCanceled="Screen_PointerReleased" />
+        <Canvas x:Name="PadLayer" />
+        <Grid x:Name="Menu" Background="#CC000000" Visibility="Collapsed" Tapped="Menu_Tapped">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="240">
+                <TextBlock x:Name="MenuTitle" FontSize="22" Margin="0,0,0,16" TextAlignment="Center" TextWrapping="Wrap" Foreground="White" />
+                <Button x:Name="ResumeButton" Content="Resume" HorizontalAlignment="Stretch" Margin="0,4" Click="Resume_Click" />
+                <Button x:Name="KeypadButton" Content="Hide keypad" HorizontalAlignment="Stretch" Margin="0,4" Click="Keypad_Click" />
+                <Button x:Name="LayoutButton" Content="Keypad layout" HorizontalAlignment="Stretch" Margin="0,4" Click="Layout_Click" />
+                <Button x:Name="DiagButton" Content="Diagonals" HorizontalAlignment="Stretch" Margin="0,4" Click="Diag_Click" />
+                <Button x:Name="SmoothButton" Content="Smooth scaling" HorizontalAlignment="Stretch" Margin="0,4" Click="Smooth_Click" />
+                <Button x:Name="SoundButton" Content="Sound" HorizontalAlignment="Stretch" Margin="0,4" Click="Sound_Click" />
+                <Button Content="Restart" HorizontalAlignment="Stretch" Margin="0,4" Click="Restart_Click" />
+                <Button Content="Exit" HorizontalAlignment="Stretch" Margin="0,4" Click="Exit_Click" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Page>

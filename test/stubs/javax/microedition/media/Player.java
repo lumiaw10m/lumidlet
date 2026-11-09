@@ -1,0 +1,1 @@
+package javax.microedition.media; public interface Player { void start() throws MediaException; void setLoopCount(int c); void realize() throws MediaException; long getDuration(); }

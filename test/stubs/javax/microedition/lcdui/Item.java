@@ -1,0 +1,1 @@
+package javax.microedition.lcdui; public abstract class Item { public String getLabel(){return null;} public void setLabel(String s){} }

@@ -1,0 +1,1 @@
+package javax.microedition.media; public class Manager { public static Player createPlayer(java.io.InputStream s,String t) throws java.io.IOException, MediaException {return null;} public static void playTone(int n,int d,int v) throws MediaException {} }

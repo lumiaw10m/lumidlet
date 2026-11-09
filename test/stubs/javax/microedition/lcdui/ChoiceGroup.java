@@ -1,0 +1,1 @@
+package javax.microedition.lcdui; public class ChoiceGroup extends Item implements Choice { public ChoiceGroup(String l,int t){} public int append(String s,Image i){return 0;} public int getSelectedIndex(){return 0;} }

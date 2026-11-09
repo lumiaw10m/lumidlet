@@ -1,0 +1,4 @@
+MIDlet-1: UiTest, , UiTest
+MIDlet-Name: UiTest
+MIDlet-Vendor: test
+MIDlet-Version: 1.0

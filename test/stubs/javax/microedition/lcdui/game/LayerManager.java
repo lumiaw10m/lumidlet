@@ -1,0 +1,1 @@
+package javax.microedition.lcdui.game; import javax.microedition.lcdui.*; public class LayerManager { public void append(Layer l){} public void setViewWindow(int x,int y,int w,int h){} public void paint(Graphics g,int x,int y){} }

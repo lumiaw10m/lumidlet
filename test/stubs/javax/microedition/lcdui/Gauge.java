@@ -1,0 +1,1 @@
+package javax.microedition.lcdui; public class Gauge extends Item { public Gauge(String l,boolean i,int m,int v){} public int getValue(){return 0;} public void setValue(int v){} }

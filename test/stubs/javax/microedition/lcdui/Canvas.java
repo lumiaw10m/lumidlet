@@ -1,0 +1,5 @@
+package javax.microedition.lcdui;
+public abstract class Canvas extends Displayable { public static final int UP=1,DOWN=6,LEFT=2,RIGHT=5,FIRE=8,GAME_A=9,KEY_NUM5=53;
+protected Canvas(){} protected abstract void paint(Graphics g); public final void repaint(){} public final void repaint(int x,int y,int w,int h){} public final void serviceRepaints(){}
+public void setFullScreenMode(boolean b){} public int getGameAction(int k){return 0;} public int getKeyCode(int a){return 0;} public String getKeyName(int k){return null;}
+protected void keyPressed(int k){} protected void keyReleased(int k){} protected void keyRepeated(int k){} protected void pointerPressed(int x,int y){} protected void pointerReleased(int x,int y){} protected void pointerDragged(int x,int y){} protected void showNotify(){} protected void hideNotify(){} }

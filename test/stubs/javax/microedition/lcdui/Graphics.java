@@ -1,0 +1,7 @@
+package javax.microedition.lcdui;
+public class Graphics { public static final int HCENTER=1,VCENTER=2,LEFT=4,RIGHT=8,TOP=16,BOTTOM=32,BASELINE=64,SOLID=0,DOTTED=1;
+public void setColor(int c){} public void setColor(int r,int g,int b){} public int getColor(){return 0;} public void fillRect(int x,int y,int w,int h){} public void drawRect(int x,int y,int w,int h){} public void drawLine(int a,int b,int c,int d){}
+public void fillArc(int x,int y,int w,int h,int s,int a){} public void drawArc(int x,int y,int w,int h,int s,int a){} public void fillRoundRect(int x,int y,int w,int h,int a,int b){} public void drawRoundRect(int x,int y,int w,int h,int a,int b){}
+public void fillTriangle(int a,int b,int c,int d,int e,int f){} public void drawString(String s,int x,int y,int a){} public void drawChar(char c,int x,int y,int a){} public void drawImage(Image i,int x,int y,int a){}
+public void drawRegion(Image i,int a,int b,int c,int d,int t,int x,int y,int an){} public void drawRGB(int[] r,int o,int s,int x,int y,int w,int h,boolean a){} public void setFont(Font f){} public Font getFont(){return null;}
+public void setClip(int x,int y,int w,int h){} public void clipRect(int x,int y,int w,int h){} public void translate(int x,int y){} public int getClipX(){return 0;} public void setStrokeStyle(int s){} public void copyArea(int a,int b,int c,int d,int e,int f,int g){} }

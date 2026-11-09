@@ -1,0 +1,4 @@
+MIDlet-1: Bench, , Bench
+MIDlet-Name: Bench
+MIDlet-Vendor: test
+MIDlet-Version: 1.0

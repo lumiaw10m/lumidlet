@@ -1,0 +1,1 @@
+package com.nokia.mid.ui; import javax.microedition.lcdui.*; public interface DirectGraphics { int FLIP_HORIZONTAL=0x2000, FLIP_VERTICAL=0x4000, ROTATE_90=90; void drawImage(Image i,int x,int y,int a,int m); void fillTriangle(int a,int b,int c,int d,int e,int f,int argb); void setARGBColor(int c); }

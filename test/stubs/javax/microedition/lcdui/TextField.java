@@ -1,0 +1,1 @@
+package javax.microedition.lcdui; public class TextField extends Item { public static final int ANY=0,PASSWORD=0x10000; public TextField(String l,String t,int m,int c){} public String getString(){return null;} }

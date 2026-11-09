@@ -1,0 +1,1 @@
+package javax.microedition.lcdui; public class List extends Screen implements Choice { public static final Command SELECT_COMMAND=null; public List(String t,int ty){} public int append(String s,Image i){return 0;} public int getSelectedIndex(){return 0;} public String getString(int i){return null;} }

@@ -1,0 +1,1 @@
+package javax.microedition.lcdui; public class Form extends Screen { public Form(String t){} public int append(Item i){return 0;} public int append(String s){return 0;} public int append(Image i){return 0;} public void setItemStateListener(ItemStateListener l){} public int size(){return 0;} }

@@ -1,0 +1,17 @@
+app/bin/
+app/obj/
+app/out/
+harness/bin/
+*.pfx
+*.user
+*.log
+
+shots/
+test/katamari/
+test/alien/
+test/**/out/
+test/**/pc*/
+test/**/run/
+test/**/storage/
+test/**/*.jar
+test/stubs/**/*.class

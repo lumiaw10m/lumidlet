@@ -1,0 +1,1 @@
+package com.nokia.mid.ui; import javax.microedition.lcdui.*; public class DirectUtils { public static DirectGraphics getDirectGraphics(Graphics g){return null;} public static Image createImage(int w,int h,int argb){return null;} }

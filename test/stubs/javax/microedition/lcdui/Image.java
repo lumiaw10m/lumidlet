@@ -1,0 +1,3 @@
+package javax.microedition.lcdui;
+public class Image { public static Image createImage(int w,int h){return null;} public static Image createImage(String n) throws java.io.IOException {return null;} public static Image createImage(byte[] d,int o,int l){return null;}
+public static Image createImage(Image i,int x,int y,int w,int h,int t){return null;} public static Image createRGBImage(int[] r,int w,int h,boolean a){return null;} public Graphics getGraphics(){return null;} public int getWidth(){return 0;} public int getHeight(){return 0;} public void getRGB(int[] r,int o,int s,int x,int y,int w,int h){} }

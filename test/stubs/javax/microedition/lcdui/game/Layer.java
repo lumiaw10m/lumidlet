@@ -1,0 +1,1 @@
+package javax.microedition.lcdui.game; import javax.microedition.lcdui.*; public abstract class Layer { public int getX(){return 0;} public int getY(){return 0;} public void setPosition(int x,int y){} public void move(int x,int y){} public void setVisible(boolean v){} public abstract void paint(Graphics g); }
