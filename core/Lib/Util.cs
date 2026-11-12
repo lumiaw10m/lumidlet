@@ -60,6 +60,7 @@ namespace Lumidlet.Lib
     {
         public readonly List<TimerTaskObj> Tasks = new List<TimerTaskObj>();
         public bool Cancelled;
+        public int Errors;
         public JThread Thread;
     }
 
@@ -462,9 +463,10 @@ namespace Lumidlet.Lib
                 try { jt.CallVirtual(due, "run()V"); }
                 catch (JavaException e)
                 {
-                    ReportUncaught(jt, e.Obj);
-                    lock (tm) { tm.Cancelled = true; tm.Tasks.Clear(); }
-                    return;
+                    // CLDC kills the Timer here, but on real phones a task that touches
+                    // not-yet-initialised state at startup usually loses that race. Keep the
+                    // timer alive (like other emulators) so one early exception doesn't freeze the game.
+                    if (++tm.Errors <= 3) ReportUncaught(jt, e.Obj);
                 }
             }
         }

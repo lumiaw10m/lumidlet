@@ -158,6 +158,7 @@ namespace Lumidlet.Midp
             Media.Register(Vm.Natives);
             Nokia.Register(Vm.Natives);
             Net.Register(Vm.Natives);
+            Lumidlet.M3g.Natives.Register(Vm.Natives);
             MidletLib.Register(Vm.Natives);
             var p = Vm.Properties;
             p["microedition.platform"] = Config.Platform;

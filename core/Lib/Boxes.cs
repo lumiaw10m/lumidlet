@@ -14,6 +14,7 @@ namespace Lumidlet.Lib
         }
 
         public static BoxObj BoxInt(JThread t, int v) { var o = Box(t, "java/lang/Integer"); o.V.I = v; return o; }
+        public static BoxObj BoxBool(JThread t, bool v) { var o = Box(t, "java/lang/Boolean"); o.V.I = v ? 1 : 0; return o; }
 
         static BoxObj V(JThread t, int b) => (BoxObj)t.R[b];
 

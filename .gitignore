@@ -18,3 +18,8 @@ test/stubs/**/*.class
 test/rhynn/
 test/probe/
 test/sweep*/
+test/m3g*/
+test/fix/
+test/dbg_*/
+test/retest.txt
+test/*_run.log
