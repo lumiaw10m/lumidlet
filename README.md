@@ -16,7 +16,7 @@ There's no Java on the phone. Lumidlet carries its own bytecode interpreter and 
 - **RMS:** record stores are saved per game, with enumerations, filters, comparators and listeners.
 - **Sound (MMAPI):** MIDI goes through a built-in software synthesizer, so no extra packages are needed. WAV, MP3 and AMR play through the phone's media player. Tone sequences and `Manager.playTone` work too.
 - **Nokia UI API:** FullCanvas, DirectGraphics (pixel formats, flips and rotations, polygons), DeviceControl vibration, and `com.nokia.mid.sound.Sound`, including OTA ringtones.
-- **Networking:** HTTP and HTTPS through `Connector`/`HttpConnection`.
+- **Networking:** HTTP and HTTPS through `Connector`/`HttpConnection`, and raw TCP sockets (`socket://`) for online games such as OpenRhynn.
 
 ## Using it
 
@@ -38,7 +38,8 @@ A Bluetooth keyboard works as well:
 | Enter | Fire |
 | F1 / F2 | Soft keys |
 | Digits | Number keys |
-| E / R | `*` / `#` |
+| Numpad * / | `*` / `#` |
+| Letters | Typed into the game |
 | Esc | Menu |
 
 ## Building
@@ -77,4 +78,4 @@ Key codes follow Nokia's: −1…−4 are up, down, left and right, −5 is fire
 
 ## Not supported yet
 
-M3G 3D (JSR-184), Bluetooth (JSR-82), file access (JSR-75), SMS (JSR-120), raw sockets, and vendor APIs other than Nokia's.
+M3G 3D (JSR-184), Bluetooth (JSR-82), file access (JSR-75), SMS (JSR-120), server sockets, and vendor APIs other than Nokia's.

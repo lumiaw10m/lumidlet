@@ -211,6 +211,8 @@ namespace Lumidlet.Vm
                 }
                 c = Natives.Build(this, name);
                 if (c != null) return c;
+                if (name.StartsWith("java/", StringComparison.Ordinal) || name.StartsWith("javax/microedition/", StringComparison.Ordinal))
+                    throw new JavaThrow("java/lang/NoClassDefFoundError", name.Replace('/', '.'));
                 byte[] data = ClassPath?.GetClass(name);
                 if (data == null) throw new JavaThrow("java/lang/NoClassDefFoundError", name.Replace('/', '.'));
                 c = ClassFile.Parse(this, data, name);

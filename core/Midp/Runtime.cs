@@ -133,6 +133,7 @@ namespace Lumidlet.Midp
         volatile int gameHeld, gameLatched;
         public SoftMenu Menu;
         public DisplayableObj PrevDisplayable;
+        public readonly List<SocketConnObj> Sockets = new List<SocketConnObj>();
 
         public static MidpRuntime Of(JThread t) => (MidpRuntime)t.Vm.Runtime;
 
@@ -232,8 +233,13 @@ namespace Lumidlet.Midp
         void EventMain(JThread t)
         {
             string name;
-            var cls = MidletClass(Config.MidletIndex, out name) ?? AppProperty("Main-Class");
-            if (cls == null) { Stop("No MIDlet-1 attribute in the manifest"); return; }
+            var cls = MidletClass(Config.MidletIndex, out name);
+            if (cls == null)
+            {
+                var found = Jar.FindMidlets();
+                if (found.Count > 0) cls = found[0];
+            }
+            if (cls == null) { Stop("No MIDlet found in this jar"); return; }
             try
             {
                 var c = Vm.LoadClass(cls.Replace('.', '/'));
@@ -310,6 +316,7 @@ namespace Lumidlet.Midp
             lock (Vm.Threads) foreach (var th in Vm.Threads) th.Wake.Set();
             lock (qlock) Monitor.PulseAll(qlock);
             Media.StopAll(this);
+            lock (Sockets) { foreach (var sc in Sockets) Net.CloseSocket(sc); Sockets.Clear(); }
             Host.Exited(reason);
         }
 

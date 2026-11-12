@@ -15,3 +15,5 @@ test/**/run/
 test/**/storage/
 test/**/*.jar
 test/stubs/**/*.class
+test/rhynn/
+test/probe/

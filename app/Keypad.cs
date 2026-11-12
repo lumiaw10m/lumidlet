@@ -14,7 +14,7 @@ namespace Lumidlet
 {
     public sealed class Keypad
     {
-        public const int MenuKey = int.MinValue;
+        public const int MenuKey = int.MinValue, TypeKey = int.MinValue + 1;
         public const int DiagBase = -1000;
 
         public static bool IsDiagonal(int code) => code > DiagBase - 100 && code < DiagBase + 100;
@@ -55,7 +55,7 @@ namespace Lumidlet
             if (Layout == Split)
                 Build(Nav, new object[,]
                 {
-                    { Lbl("L", Keys.SoftL), null, Lbl("R", Keys.SoftR) },
+                    { Lbl("L", Keys.SoftL), Lbl("⌨", TypeKey), Lbl("R", Keys.SoftR) },
                     { Lbl("↖", DiagBase + '1'), Lbl("↑", Keys.Up), Lbl("↗", DiagBase + '3') },
                     { Lbl("←", Keys.Left), Lbl("F", Keys.Fire), Lbl("→", Keys.Right) },
                     { Lbl("↙", DiagBase + '7'), Lbl("↓", Keys.Down), Lbl("↘", DiagBase + '9') },
@@ -97,7 +97,7 @@ namespace Lumidlet
                 {
                     if (layout[r, c] == null) continue;
                     var kv = (KeyValuePair<string, int>)layout[r, c];
-                    bool soft = kv.Value == Keys.SoftL || kv.Value == Keys.SoftR || kv.Value == MenuKey;
+                    bool soft = kv.Value == Keys.SoftL || kv.Value == Keys.SoftR || kv.Value == MenuKey || kv.Value == TypeKey;
                     var tb = new TextBlock
                     {
                         Text = kv.Key,
@@ -159,7 +159,7 @@ namespace Lumidlet
             var k = HitTest(g, e.GetCurrentPoint(g).Position);
             if (k == cur) return;
             if (cur != null) Release(cur);
-            if (k != null && (kind == 0 || k.Code != MenuKey))
+            if (k != null && (kind == 0 || (k.Code != MenuKey && k.Code != TypeKey)))
             {
                 pointers[id] = k;
                 Press(k);
@@ -180,7 +180,7 @@ namespace Lumidlet
         {
             if (k.Down > 0 && --k.Down == 0)
             {
-                bool soft = k.Code == Keys.SoftL || k.Code == Keys.SoftR || k.Code == MenuKey;
+                bool soft = k.Code == Keys.SoftL || k.Code == Keys.SoftR || k.Code == MenuKey || k.Code == TypeKey;
                 k.View.Background = new SolidColorBrush(soft ? Soft : Normal);
                 Up?.Invoke(k.Code);
             }

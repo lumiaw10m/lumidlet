@@ -13,6 +13,7 @@
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="240">
                 <TextBlock x:Name="MenuTitle" FontSize="22" Margin="0,0,0,16" TextAlignment="Center" TextWrapping="Wrap" Foreground="White" />
                 <Button x:Name="ResumeButton" Content="Resume" HorizontalAlignment="Stretch" Margin="0,4" Click="Resume_Click" />
+                <Button Content="Type text" HorizontalAlignment="Stretch" Margin="0,4" Click="Type_Click" />
                 <Button x:Name="KeypadButton" Content="Hide keypad" HorizontalAlignment="Stretch" Margin="0,4" Click="Keypad_Click" />
                 <Button x:Name="LayoutButton" Content="Keypad layout" HorizontalAlignment="Stretch" Margin="0,4" Click="Layout_Click" />
                 <Button x:Name="DiagButton" Content="Diagonals" HorizontalAlignment="Stretch" Margin="0,4" Click="Diag_Click" />

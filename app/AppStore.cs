@@ -185,6 +185,7 @@ namespace Lumidlet
                 e.Midlets.Add(parts[0].Trim());
                 if (icon == null && parts.Length >= 2 && parts[1].Trim().Length > 0) icon = parts[1].Trim();
             }
+            if (icon == null && jar.GetResource("icon.png") != null) icon = "icon.png";
             if (icon != null)
             {
                 var data = jar.GetResource(icon.Trim().TrimStart('/'));
@@ -229,7 +230,7 @@ namespace Lumidlet
             if (votes.Count > 0)
             {
                 var best = votes.OrderByDescending(kv => kv.Value).First();
-                if (best.Value >= 2 || votes.Count == 1) return Sizes[best.Key];
+                if (best.Value >= 2) return Sizes[best.Key];
             }
             return new[] { 240, 320 };
         }

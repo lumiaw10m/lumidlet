@@ -18,6 +18,98 @@ namespace Lumidlet.Midp
         public byte[] Data;
     }
 
+    public sealed class SocketConnObj : JObject
+    {
+        public string Host;
+        public int Port;
+        public System.Net.Sockets.TcpClient Tcp;
+        public System.IO.Stream Stream;
+        public volatile bool Closed;
+    }
+
+    public sealed class SockInStream : InStreamObj
+    {
+        public SocketConnObj Conn;
+        bool closed;
+        readonly byte[] one = new byte[1];
+
+        void Check()
+        {
+            if (closed || Conn.Closed) throw new JavaThrow("java/io/IOException", "stream closed");
+        }
+
+        public override int Read(JThread t)
+        {
+            Check();
+            int n = Io(() => Conn.Stream.Read(one, 0, 1));
+            return n <= 0 ? -1 : one[0];
+        }
+
+        public override int Read(JThread t, sbyte[] b, int off, int len)
+        {
+            if (b == null) throw new NullReferenceException();
+            if (off < 0 || len < 0 || off + len > b.Length) throw new JavaThrow("java/lang/IndexOutOfBoundsException");
+            Check();
+            if (len == 0) return 0;
+            var buf = new byte[len];
+            int n = Io(() => Conn.Stream.Read(buf, 0, len));
+            if (n <= 0) return -1;
+            Buffer.BlockCopy(buf, 0, b, off, n);
+            return n;
+        }
+
+        public override int Available(JThread t)
+        {
+            Check();
+            try { return Conn.Tcp.Available; } catch (Exception) { return 0; }
+        }
+
+        public override void Close(JThread t) { closed = true; }
+
+        internal int Io(Func<int> f)
+        {
+            try { return f(); }
+            catch (Exception e) when (!(e is JavaThrow) && !(e is VmHalt))
+            {
+                if (Conn.Closed) throw new JavaThrow("java/io/IOException", "connection closed");
+                throw new JavaThrow("java/io/IOException", e.Message);
+            }
+        }
+    }
+
+    public sealed class SockOutStream : OutStreamObj
+    {
+        public SocketConnObj Conn;
+        bool closed;
+
+        void Send(byte[] data, int off, int len)
+        {
+            if (closed || Conn.Closed) throw new JavaThrow("java/io/IOException", "stream closed");
+            try { Conn.Stream.Write(data, off, len); }
+            catch (Exception e) when (!(e is JavaThrow))
+            {
+                throw new JavaThrow("java/io/IOException", e.Message);
+            }
+        }
+
+        public override void Write(JThread t, int b) => Send(new[] { (byte)b }, 0, 1);
+
+        public override void Write(JThread t, sbyte[] b, int off, int len)
+        {
+            if (b == null) throw new NullReferenceException();
+            if (off < 0 || len < 0 || off + len > b.Length) throw new JavaThrow("java/lang/IndexOutOfBoundsException");
+            Send(Enc.ToU(b, off, len), 0, len);
+        }
+
+        public override void Flush(JThread t)
+        {
+            if (closed || Conn.Closed) throw new JavaThrow("java/io/IOException", "stream closed");
+            try { Conn.Stream.Flush(); } catch (Exception e) { throw new JavaThrow("java/io/IOException", e.Message); }
+        }
+
+        public override void Close(JThread t) { closed = true; }
+    }
+
     public static class Net
     {
         const string IO = "javax/microedition/io/";
@@ -85,7 +177,74 @@ namespace Lumidlet.Midp
                 h.Url = url;
                 return h;
             }
+            if (url.StartsWith("socket://", StringComparison.OrdinalIgnoreCase)) return OpenSocket(t, url);
             throw new JavaThrow(IO + "ConnectionNotFoundException", url);
+        }
+
+        static JObject OpenSocket(JThread t, string url)
+        {
+            var addr = url.Substring(9);
+            int semi = addr.IndexOf(';');
+            if (semi >= 0) addr = addr.Substring(0, semi);
+            int colon = addr.LastIndexOf(':');
+            int port;
+            if (colon <= 0 || !int.TryParse(addr.Substring(colon + 1), out port) || port <= 0 || port > 65535)
+                throw new JavaThrow(IO + "ConnectionNotFoundException", "server sockets are not supported: " + url);
+            var host = addr.Substring(0, colon).Trim('[', ']');
+            var rt = MidpRuntime.Of(t);
+            var c = (SocketConnObj)t.Vm.NewObject(t.Vm.LoadClass("lumidlet/SocketConnection"));
+            c.Host = host; c.Port = port;
+            var tcp = new System.Net.Sockets.TcpClient();
+            try
+            {
+                var task = tcp.ConnectAsync(host, port);
+                if (!task.Wait(20000)) { tcp.Dispose(); throw new JavaThrow("java/io/IOException", "connection timed out: " + host + ":" + port); }
+            }
+            catch (AggregateException e)
+            {
+                tcp.Dispose();
+                throw new JavaThrow("java/io/IOException", (e.InnerException ?? e).Message);
+            }
+            c.Tcp = tcp;
+            c.Stream = tcp.GetStream();
+            lock (rt.Sockets) rt.Sockets.Add(c);
+            rt.Host.Log("socket open " + host + ":" + port);
+            return c;
+        }
+
+        static SocketConnObj Sock(JThread t, int b)
+        {
+            var c = (SocketConnObj)t.R[b];
+            if (c.Closed) throw new JavaThrow("java/io/IOException", "connection closed");
+            return c;
+        }
+
+        static JObject SockIn(JThread t, SocketConnObj c, bool data)
+        {
+            var s = (SockInStream)t.Vm.NewObject(t.Vm.LoadClass("lumidlet/SocketInputStream"));
+            s.Conn = c;
+            if (!data) return s;
+            var d = (FilterInStream)t.Vm.NewObject(t.Vm.LoadClass("java/io/DataInputStream"));
+            d.In = s;
+            return d;
+        }
+
+        static JObject SockOut(JThread t, SocketConnObj c, bool data)
+        {
+            var s = (SockOutStream)t.Vm.NewObject(t.Vm.LoadClass("lumidlet/SocketOutputStream"));
+            s.Conn = c;
+            if (!data) return s;
+            var d = (FilterOutStream)t.Vm.NewObject(t.Vm.LoadClass("java/io/DataOutputStream"));
+            d.Out = s;
+            return d;
+        }
+
+        public static void CloseSocket(SocketConnObj c)
+        {
+            if (c.Closed) return;
+            c.Closed = true;
+            try { c.Stream?.Dispose(); } catch (Exception) { }
+            try { c.Tcp?.Dispose(); } catch (Exception) { }
         }
 
         static Uri U(HttpConnObj h) => new Uri(h.Url);
@@ -99,6 +258,62 @@ namespace Lumidlet.Midp
             n.Interface(IO + "ContentConnection", null, new[] { IO + "StreamConnection" });
             n.Interface(IO + "HttpConnection", null, new[] { IO + "ContentConnection" });
             n.Interface(IO + "HttpsConnection", null, new[] { IO + "HttpConnection" });
+            n.Interface(IO + "SocketConnection", null, new[] { IO + "StreamConnection" });
+
+            n.Define("lumidlet/SocketInputStream", "java/io/InputStream", c => c
+                .M("read", "()I", (t, b) => t.RetI(b, ((InStreamObj)t.R[b]).Read(t))), Rt.F<SockInStream>());
+            n.Define("lumidlet/SocketOutputStream", "java/io/OutputStream", c => c
+                .M("write", "(I)V", (t, b) => ((OutStreamObj)t.R[b]).Write(t, t.I(b + 1))), Rt.F<SockOutStream>());
+
+            n.Define("lumidlet/SocketConnection", "java/lang/Object", c => c
+                .M("close", "()V", (t, b) => CloseSocket((SocketConnObj)t.R[b]))
+                .M("openInputStream", "()Ljava/io/InputStream;", (t, b) => t.RetA(b, SockIn(t, Sock(t, b), false)))
+                .M("openDataInputStream", "()Ljava/io/DataInputStream;", (t, b) => t.RetA(b, SockIn(t, Sock(t, b), true)))
+                .M("openOutputStream", "()Ljava/io/OutputStream;", (t, b) => t.RetA(b, SockOut(t, Sock(t, b), false)))
+                .M("openDataOutputStream", "()Ljava/io/DataOutputStream;", (t, b) => t.RetA(b, SockOut(t, Sock(t, b), true)))
+                .M("getAddress", "()Ljava/lang/String;", (t, b) => t.RetA(b, Sock(t, b).Host))
+                .M("getPort", "()I", (t, b) => t.RetI(b, Sock(t, b).Port))
+                .M("getLocalAddress", "()Ljava/lang/String;", (t, b) =>
+                {
+                    var ep = Sock(t, b).Tcp.Client?.LocalEndPoint as System.Net.IPEndPoint;
+                    t.RetA(b, ep != null ? ep.Address.ToString() : "127.0.0.1");
+                })
+                .M("getLocalPort", "()I", (t, b) =>
+                {
+                    var ep = Sock(t, b).Tcp.Client?.LocalEndPoint as System.Net.IPEndPoint;
+                    t.RetI(b, ep != null ? ep.Port : 0);
+                })
+                .M("setSocketOption", "(BI)V", (t, b) =>
+                {
+                    var tcp = Sock(t, b).Tcp; int v = t.I(b + 2);
+                    try
+                    {
+                        switch (t.I(b + 1))
+                        {
+                            case 0: tcp.NoDelay = v == 0; break;
+                            case 1: tcp.LingerState = new System.Net.Sockets.LingerOption(v > 0, Math.Max(0, v)); break;
+                            case 2: tcp.Client.SetSocketOption(System.Net.Sockets.SocketOptionLevel.Socket, System.Net.Sockets.SocketOptionName.KeepAlive, v != 0); break;
+                            case 3: if (v > 0) tcp.ReceiveBufferSize = v; break;
+                            case 4: if (v > 0) tcp.SendBufferSize = v; break;
+                            default: throw new JavaThrow("java/lang/IllegalArgumentException", "socket option");
+                        }
+                    }
+                    catch (Exception e) when (!(e is JavaThrow)) { }
+                })
+                .M("getSocketOption", "(B)I", (t, b) =>
+                {
+                    var tcp = Sock(t, b).Tcp;
+                    switch (t.I(b + 1))
+                    {
+                        case 0: t.RetI(b, tcp.NoDelay ? 0 : 1); break;
+                        case 1: t.RetI(b, tcp.LingerState != null && tcp.LingerState.Enabled ? tcp.LingerState.LingerTime : 0); break;
+                        case 2: t.RetI(b, 1); break;
+                        case 3: t.RetI(b, tcp.ReceiveBufferSize); break;
+                        case 4: t.RetI(b, tcp.SendBufferSize); break;
+                        default: throw new JavaThrow("java/lang/IllegalArgumentException", "socket option");
+                    }
+                }),
+                Rt.F<SocketConnObj>(), new[] { IO + "SocketConnection" });
 
             n.Define(IO + "Connector", "java/lang/Object", c => c
                 .S("open", "(Ljava/lang/String;)L" + IO + "Connection;", (t, b) => t.RetA(b, Open(t, (string)t.R[b])))

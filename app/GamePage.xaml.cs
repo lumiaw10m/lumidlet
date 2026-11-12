@@ -87,13 +87,14 @@ namespace Lumidlet
             pad.Down = code =>
             {
                 if (code == Keypad.MenuKey) { ShowMenu(); return; }
+                if (code == Keypad.TypeKey) { TypeText(); return; }
                 if (!Keypad.IsDiagonal(code)) { rt?.KeyDown(code); return; }
                 if (app != null && app.DiagCombo) foreach (var k in Keypad.DiagonalArrows(code)) rt?.KeyDown(k);
                 else rt?.KeyDown(Keypad.DiagonalDigit(code));
             };
             pad.Up = code =>
             {
-                if (code == Keypad.MenuKey) return;
+                if (code == Keypad.MenuKey || code == Keypad.TypeKey) return;
                 if (!Keypad.IsDiagonal(code)) { rt?.KeyUp(code); return; }
                 if (app != null && app.DiagCombo) foreach (var k in Keypad.DiagonalArrows(code)) rt?.KeyUp(k);
                 else rt?.KeyUp(Keypad.DiagonalDigit(code));
@@ -112,6 +113,7 @@ namespace Lumidlet
             DisplayInformation.AutoRotationPreferences = app.Width > app.Height || app.Rotate ? DisplayOrientations.Landscape | DisplayOrientations.LandscapeFlipped : DisplayOrientations.Portrait;
             SystemNavigationManager.GetForCurrentView().BackRequested += OnBack;
             Window.Current.CoreWindow.KeyDown += OnKeyDown;
+            Window.Current.CoreWindow.CharacterReceived += OnChar;
             Window.Current.CoreWindow.KeyUp += OnKeyUp;
             Application.Current.Suspending += OnSuspending;
             Application.Current.Resuming += OnResuming;
@@ -127,6 +129,7 @@ namespace Lumidlet
             scriptTimer?.Stop();
             SystemNavigationManager.GetForCurrentView().BackRequested -= OnBack;
             Window.Current.CoreWindow.KeyDown -= OnKeyDown;
+            Window.Current.CoreWindow.CharacterReceived -= OnChar;
             Window.Current.CoreWindow.KeyUp -= OnKeyUp;
             Application.Current.Suspending -= OnSuspending;
             Application.Current.Resuming -= OnResuming;
@@ -305,15 +308,59 @@ namespace Lumidlet
                 case VirtualKey.Left: case VirtualKey.GamepadDPadLeft: return Keys.Left;
                 case VirtualKey.Right: case VirtualKey.GamepadDPadRight: return Keys.Right;
                 case VirtualKey.Enter: case VirtualKey.Space: case VirtualKey.GamepadA: return Keys.Fire;
-                case VirtualKey.F1: case VirtualKey.Q: case VirtualKey.GamepadLeftShoulder: return Keys.SoftL;
-                case VirtualKey.F2: case VirtualKey.W: case VirtualKey.GamepadRightShoulder: return Keys.SoftR;
+                case VirtualKey.F1: case VirtualKey.GamepadLeftShoulder: return Keys.SoftL;
+                case VirtualKey.F2: case VirtualKey.GamepadRightShoulder: return Keys.SoftR;
                 case VirtualKey.Back: case VirtualKey.Delete: case VirtualKey.GamepadB: return Keys.Clear;
-                case VirtualKey.Multiply: case VirtualKey.E: return '*';
-                case VirtualKey.Divide: case VirtualKey.R: return '#';
+                case VirtualKey.Multiply: return '*';
+                case VirtualKey.Divide: return '#';
             }
             if (k >= VirtualKey.Number0 && k <= VirtualKey.Number9) return '0' + (k - VirtualKey.Number0);
             if (k >= VirtualKey.NumberPad0 && k <= VirtualKey.NumberPad9) return '0' + (k - VirtualKey.NumberPad0);
             return 0;
+        }
+
+        void OnChar(CoreWindow sender, CharacterReceivedEventArgs e)
+        {
+            if (Menu.Visibility == Visibility.Visible || rt == null) return;
+            char c = (char)e.KeyCode;
+            if (c < 33 || char.IsDigit(c) || c == '*' || c == '#' || c == 127) return;
+            rt.KeyDown(c);
+            rt.KeyUp(c);
+            e.Handled = true;
+        }
+
+        bool typing;
+
+        async void TypeText()
+        {
+            if (typing || rt == null) return;
+            typing = true;
+            pad.ReleaseAll();
+            try
+            {
+                var box = new TextBox { AcceptsReturn = false };
+                var dlg = new ContentDialog { Title = "Type text", Content = box, PrimaryButtonText = "Send", SecondaryButtonText = "Cancel" };
+                dlg.Opened += (s, a) => box.Focus(FocusState.Programmatic);
+                if (await dlg.ShowAsync() != ContentDialogResult.Primary || string.IsNullOrEmpty(box.Text)) return;
+                var text = box.Text;
+                int i = 0;
+                var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(40) };
+                timer.Tick += (s, a) =>
+                {
+                    if (rt == null || i >= text.Length) { timer.Stop(); return; }
+                    int c = text[i++];
+                    rt.KeyDown(c);
+                    rt.KeyUp(c);
+                };
+                timer.Start();
+            }
+            finally { typing = false; }
+        }
+
+        void Type_Click(object sender, RoutedEventArgs e)
+        {
+            HideMenu();
+            TypeText();
         }
 
         void OnKeyDown(CoreWindow sender, KeyEventArgs e)
