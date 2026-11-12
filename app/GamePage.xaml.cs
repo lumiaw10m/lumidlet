@@ -329,7 +329,6 @@ namespace Lumidlet
             if (Menu.Visibility == Visibility.Visible || rt == null) return;
             char c = (char)e.KeyCode;
             if (c < 33 || char.IsDigit(c) || c == '*' || c == '#' || c == 127) return;
-            c = char.ToUpperInvariant(c);
             rt.KeyDown(c);
             rt.KeyUp(c);
             e.Handled = true;
@@ -367,7 +366,7 @@ namespace Lumidlet
             pendTimer?.Stop();
             if (pendKey == 0) return;
             var seq = Keypad.Letters[pendKey - '0'] + (char)pendKey;
-            int c = seq[pendIdx];
+            int c = char.ToLowerInvariant(seq[pendIdx]);
             pendKey = 0; pendIdx = 0;
             pad.SetAbc(abc, null);
             if (c == ' ') c = '0';

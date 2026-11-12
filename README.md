@@ -39,7 +39,7 @@ A Bluetooth keyboard works as well:
 | F1 / F2 | Soft keys |
 | Digits | Number keys |
 | Numpad * / | `*` / `#` |
-| Letters | Typed into the game (as capitals) |
+| Letters | Typed into the game |
 | Esc | Menu |
 
 ## Building
