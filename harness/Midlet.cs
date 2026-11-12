@@ -20,9 +20,12 @@ namespace Lumidlet.Harness
 
         public MidpRuntime Rt;
 
+        public long LastFrameMs;
+        public static readonly System.Diagnostics.Stopwatch Clock = System.Diagnostics.Stopwatch.StartNew();
+
         public void FrameReady()
         {
-            lock (this) Frames++;
+            lock (this) { Frames++; LastFrameMs = Clock.ElapsedMilliseconds; }
         }
 
         static Font MakeFont(int px, int style) =>
@@ -218,7 +221,8 @@ namespace Lumidlet.Harness
                 Thread.Sleep(5);
             }
             host.Save(Path.Combine(shots, "final.png"));
-            Console.WriteLine("[frames] " + host.Frames + " in " + sw.ElapsedMilliseconds + " ms");
+            if (Environment.GetEnvironmentVariable("LUMIDLET_DUMP") == "1") Console.Write(Lumidlet.Vm.JThread.DumpAll());
+            Console.WriteLine("[frames] " + host.Frames + " in " + sw.ElapsedMilliseconds + " ms, last frame at " + (host.LastFrameMs - (DesktopHost.Clock.ElapsedMilliseconds - sw.ElapsedMilliseconds)) + " ms");
             rt.Stop("harness end");
             Thread.Sleep(300);
             Console.WriteLine("[audio] peak " + host.Peak.ToString("0.00"));

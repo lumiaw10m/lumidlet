@@ -584,7 +584,7 @@ namespace Lumidlet.Vm
                     if (vm.TraceExceptions)
                     {
                         var th = ex as Lib.ThrowableObj;
-                        vm.Log("throw " + ex.Class.JavaName + (th != null && th.Message != null ? ": " + th.Message : "") + " at " + m + " pc " + opPc);
+                        vm.Log("throw " + ex.Class.JavaName + (th != null && th.Message != null ? ": " + th.Message : "") + " at " + m + m.Desc + " pc " + opPc);
                     }
                     while (true)
                     {

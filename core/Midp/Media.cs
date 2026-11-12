@@ -20,6 +20,8 @@ namespace Lumidlet.Midp
         public bool Muted;
         public JObject VolumeCtl, ToneCtl;
         public bool IsTone;
+        public long SilentUs = -1, SilentStart, SilentPos;
+        public int SilentGen;
     }
 
     public sealed class ControlObj : JObject
@@ -141,12 +143,50 @@ namespace Lumidlet.Midp
             if (Trace) p.Rt.Host.Log("player start " + p.Type + " seq=" + (p.Seq != null) + " clip=" + (p.Clip != null));
             if (p.Seq != null) { p.Seq.LoopsLeft = p.Loops; p.Seq.Start(); }
             else if (p.Clip != null) { p.LoopsLeft = p.Loops; p.Clip.Play(1); }
+            else { p.LoopsLeft = p.Loops; Silent(p); }
             Event(p, "started", Time(p));
+        }
+
+        internal static long EstimateUs(byte[] d)
+        {
+            if (d == null || d.Length < 12) return 1000000;
+            if (d[0] == 'R' && d[1] == 'I' && d[2] == 'F' && d[3] == 'F')
+            {
+                long rate = 0, size = 0;
+                for (int i = 12; i + 8 <= d.Length;)
+                {
+                    int len = d[i + 4] | (d[i + 5] << 8) | (d[i + 6] << 16) | (d[i + 7] << 24);
+                    if (d[i] == 'f' && d[i + 1] == 'm' && d[i + 2] == 't' && i + 20 <= d.Length) rate = d[i + 16] | (d[i + 17] << 8) | (d[i + 18] << 16) | (d[i + 19] << 24);
+                    if (d[i] == 'd' && d[i + 1] == 'a' && d[i + 2] == 't' && d[i + 3] == 'a') { size = Math.Min(len & 0x7FFFFFFF, d.Length - i - 8); break; }
+                    if (len < 0) break;
+                    i += 8 + len + (len & 1);
+                }
+                if (rate > 0 && size > 0) return Math.Max(50000, size * 1000000 / rate);
+            }
+            if (d.Length > 5 && d[0] == '#' && d[1] == '!' && d[2] == 'A') return Math.Max(200000, (d.Length - 6) / 32L * 20000);
+            return Math.Max(300000, Math.Min(10000000, d.Length * 8000L / 16));
+        }
+
+        static void Silent(PlayerObj p)
+        {
+            if (p.SilentUs < 0) p.SilentUs = EstimateUs(p.Data);
+            int gen = ++p.SilentGen;
+            p.SilentStart = Rt.Mono() * 1000 - p.SilentPos;
+            long wait = Math.Max(1, (p.SilentUs - p.SilentPos) / 1000);
+            System.Threading.Tasks.Task.Delay((int)wait).ContinueWith(_ =>
+            {
+                if (gen != p.SilentGen || p.State != 400) return;
+                p.SilentPos = 0;
+                if (p.LoopsLeft < 0 || --p.LoopsLeft > 0) { Silent(p); return; }
+                p.State = 300;
+                Event(p, "endOfMedia", p.SilentUs);
+            });
         }
 
         static void Stop(PlayerObj p)
         {
             if (p.State != 400) return;
+            if (p.Seq == null && p.Clip == null) { p.SilentPos = Math.Min(p.SilentUs, Rt.Mono() * 1000 - p.SilentStart); p.SilentGen++; }
             p.Seq?.Stop();
             p.Clip?.Stop();
             p.State = 300;
@@ -157,6 +197,7 @@ namespace Lumidlet.Midp
         {
             if (p.Seq != null) return p.Seq.PositionUs;
             if (p.Clip != null) return p.Clip.PositionMs * 1000;
+            if (p.SilentUs >= 0) return p.State == 400 ? Math.Min(p.SilentUs, Rt.Mono() * 1000 - p.SilentStart) : p.SilentPos;
             return 0;
         }
 
@@ -164,6 +205,7 @@ namespace Lumidlet.Midp
         {
             if (p.Seq != null) return p.Seq.DurationUs;
             if (p.Clip != null && p.Clip.DurationMs > 0) return p.Clip.DurationMs * 1000;
+            if (p.Clip == null && p.Data != null) { if (p.SilentUs < 0) p.SilentUs = EstimateUs(p.Data); return p.SilentUs; }
             return -1;
         }
 

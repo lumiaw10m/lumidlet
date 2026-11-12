@@ -20,6 +20,7 @@ namespace Lumidlet.Midp
         public IAudioClip Clip;
         public MidiSeq Seq;
         public object Listener;
+        public int SilentGen;
     }
 
     public static class Nokia
@@ -224,6 +225,12 @@ namespace Lumidlet.Midp
                     SoundStop(s);
                     if (s.Seq != null) { s.Seq.LoopsLeft = loops == 0 ? -1 : loops; s.Seq.SetVolume(GainPct(s.Gain)); s.Seq.Start(); }
                     else if (s.Clip != null) { s.Clip.SetVolume(GainPct(s.Gain)); s.Clip.Play(loops == 0 ? -1 : loops); }
+                    else if (s.Data != null && loops > 0)
+                    {
+                        int gen = ++s.SilentGen;
+                        long ms = Media.EstimateUs(s.Data) / 1000 * loops;
+                        System.Threading.Tasks.Task.Delay((int)Math.Max(1, Math.Min(ms, 600000))).ContinueWith(_ => { if (gen == s.SilentGen && s.State == 0) SoundState(s, 1); });
+                    }
                     SoundState(s, 0);
                 })
                 .M("stop", "()V", (t, b) => { var s = (SoundObj)t.R[b]; SoundStop(s); SoundState(s, 1); })
@@ -250,6 +257,7 @@ namespace Lumidlet.Midp
 
         static void SoundStop(SoundObj s)
         {
+            s.SilentGen++;
             s.Seq?.Stop();
             s.Clip?.Stop();
         }
@@ -279,6 +287,7 @@ namespace Lumidlet.Midp
             s.Rt = rt;
             if (data == null) throw new NullReferenceException();
             var d = Enc.ToU(data);
+            s.Data = d;
             var mime = Media.Sniff(d, null);
             if (mime == "audio/midi")
             {

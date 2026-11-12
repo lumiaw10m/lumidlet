@@ -274,13 +274,15 @@ namespace Lumidlet.Midp
                 lock (qlock)
                 {
                     if (queue.Count == 0 && !repaintPending) Monitor.Wait(qlock, 30);
+                    paint = repaintPending;
                     if (queue.Count > 0) a = queue.Dequeue();
-                    else if (repaintPending) paint = true;
                 }
                 try
                 {
+                    // MIDP: pending repaints are serviced before serial calls, otherwise a
+                    // run(){...; repaint(); callSerially(this);} game loop never gets painted.
+                    if (paint) DoPaint(t);
                     if (a != null) a(t);
-                    else if (paint) DoPaint(t);
                     Tick(t);
                 }
                 catch (JavaException e) { Library.ReportUncaught(t, e.Obj); }
@@ -441,15 +443,13 @@ namespace Lumidlet.Midp
                 return;
             }
             long want;
+            // Block until the requested paint has completed, not merely started: games
+            // commonly clear the Graphics/state they share with paint() right after this.
+            long end = Rt.Mono() + 2000;
             lock (qlock)
             {
-                if (!repaintPending) return;
                 want = paintSeq;
-            }
-            long end = Rt.Mono() + 200;
-            lock (qlock)
-            {
-                while (paintDone < want && !Vm.Halted && Rt.Mono() < end && repaintPending) Monitor.Wait(qlock, 20);
+                while (paintDone < want && !Vm.Halted && Rt.Mono() < end) Monitor.Wait(qlock, 20);
             }
         }
 
@@ -463,6 +463,8 @@ namespace Lumidlet.Midp
                 repaintPending = false;
                 x0 = rx0; y0 = ry0; x1 = rx1; y1 = ry1; seq = paintSeq;
             }
+            try
+            {
             var d = Current;
             var c = d as CanvasObj;
             if (c != null && !Paused)
@@ -484,7 +486,11 @@ namespace Lumidlet.Midp
                 lock (ScreenLock) Screens.Render(this);
             }
             Present();
-            lock (qlock) { if (paintDone < seq) paintDone = seq; Monitor.PulseAll(qlock); }
+            }
+            finally
+            {
+                lock (qlock) { if (paintDone < seq) paintDone = seq; Monitor.PulseAll(qlock); }
+            }
         }
 
         FontObj defaultFont;

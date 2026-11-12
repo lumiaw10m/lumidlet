@@ -45,6 +45,7 @@ namespace Lumidlet
             mp.AudioCategory = MediaPlayerAudioCategory.GameEffects;
             mp.Source = MediaSource.CreateFromStream(ms, mime);
             mp.MediaEnded += (s, e) => Ended?.Invoke();
+            mp.MediaFailed += (s, e) => Ended?.Invoke();
         }
 
         public void Play(int loops)

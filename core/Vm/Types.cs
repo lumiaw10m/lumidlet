@@ -228,7 +228,8 @@ namespace Lumidlet.Vm
             return false;
         }
 
-        public bool IsPrimitive => Name.Length == 1;
+        public bool IsPrim;
+        public bool IsPrimitive => IsPrim;
 
         public JMethod Declared(string key)
         {

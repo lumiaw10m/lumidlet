@@ -203,12 +203,6 @@ namespace Lumidlet.Vm
                 JClass c;
                 if (classes.TryGetValue(name, out c)) return c;
                 if (name[0] == '[') return MakeArray(name);
-                if (name.Length == 1 && "ZBCSIJFDV".IndexOf(name[0]) >= 0)
-                {
-                    c = new JClass { Name = name, Vm = this, Access = 0x0011, StaticP = new Slot[0], StaticO = new object[0], Init = InitState.Done };
-                    classes[name] = c;
-                    return c;
-                }
                 c = Natives.Build(this, name);
                 if (c != null) return c;
                 if (name.StartsWith("java/", StringComparison.Ordinal) || name.StartsWith("javax/microedition/", StringComparison.Ordinal))
@@ -226,13 +220,33 @@ namespace Lumidlet.Vm
         {
             var c = new JClass { Name = name, Vm = this, IsArray = true, Access = 0x0011, Super = ObjectClass ?? LoadClass("java/lang/Object") };
             c.StaticP = new Slot[0]; c.StaticO = new object[0]; c.Init = InitState.Done;
-            string comp = name.Substring(1);
-            if (comp[0] == 'L') comp = comp.Substring(1, comp.Length - 2);
             c.ElemKind = name[1];
-            c.Component = LoadClass(comp);
+            if (name.Length == 2 && "ZBCSIJFD".IndexOf(name[1]) >= 0) c.Component = Prim(name[1]);
+            else
+            {
+                string comp = name.Substring(1);
+                if (comp[0] == 'L') comp = comp.Substring(1, comp.Length - 2);
+                c.Component = LoadClass(comp);
+            }
             c.Interfaces = new JClass[0];
             classes[name] = c;
             return c;
+        }
+
+        readonly Dictionary<char, JClass> prims = new Dictionary<char, JClass>();
+
+        public JClass Prim(char kind)
+        {
+            lock (prims)
+            {
+                JClass c;
+                if (!prims.TryGetValue(kind, out c))
+                {
+                    c = new JClass { Name = kind.ToString(), Vm = this, IsPrim = true, Access = 0x0011, StaticP = new Slot[0], StaticO = new object[0], Init = InitState.Done };
+                    prims[kind] = c;
+                }
+                return c;
+            }
         }
 
         public JClass ArrayOf(JClass elem)
@@ -263,6 +277,7 @@ namespace Lumidlet.Vm
         {
             if (o == null) return false;
             if (c == ObjectClass) return true;
+            if (o is sbyte[] && c == primArrays['Z']) return true;
             return ClassOf(o).IsSubclassOf(c);
         }
 
@@ -386,6 +401,7 @@ namespace Lumidlet.Vm
             if (je != null) return je.Obj;
             var jt = e as JavaThrow;
             if (jt != null) return MakeThrowable(t, jt.ClassName, jt.Msg);
+            if (TraceExceptions && !(e is NullReferenceException) && !(e is IndexOutOfRangeException)) Log("native exception: " + e);
             if (e is NullReferenceException) return MakeThrowable(t, "java/lang/NullPointerException", null);
             if (e is IndexOutOfRangeException) return MakeThrowable(t, "java/lang/ArrayIndexOutOfBoundsException", null);
             if (e is ArgumentOutOfRangeException) return MakeThrowable(t, "java/lang/IndexOutOfBoundsException", null);

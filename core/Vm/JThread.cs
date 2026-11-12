@@ -32,6 +32,28 @@ namespace Lumidlet.Vm
             Vm = vm; Name = name;
             S = new Slot[4096];
             R = new object[4096];
+            lock (All) All.Add(new WeakReference<JThread>(this));
+        }
+
+        public static readonly System.Collections.Generic.List<WeakReference<JThread>> All = new System.Collections.Generic.List<WeakReference<JThread>>();
+
+        public static string DumpAll()
+        {
+            var sb = new System.Text.StringBuilder();
+            lock (All)
+                foreach (var w in All)
+                {
+                    JThread t;
+                    if (!w.TryGetTarget(out t) || t.FrameCount == 0) continue;
+                    sb.Append("thread ").Append(t.Name).AppendLine();
+                    try
+                    {
+                        for (int i = t.FrameCount - 1; i >= 0 && i >= t.FrameCount - 12; i--)
+                        { var f = t.Frames[i]; sb.Append("    at ").Append(f.M).Append(" pc ").Append(f.OpPc).AppendLine(); }
+                    }
+                    catch { }
+                }
+            return sb.ToString();
         }
 
         public void Ensure(int n)

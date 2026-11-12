@@ -17,3 +17,4 @@ test/**/*.jar
 test/stubs/**/*.class
 test/rhynn/
 test/probe/
+test/sweep*/
