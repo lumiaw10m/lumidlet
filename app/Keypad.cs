@@ -112,11 +112,11 @@ namespace Lumidlet
                     };
                     TextBlock sub = null;
                     UIElement child = tb;
-                    if (kv.Value >= '1' && kv.Value <= '9')
+                    if ((kv.Value >= '0' && kv.Value <= '9') || kv.Value == '*')
                     {
                         sub = new TextBlock
                         {
-                            Text = Letters[kv.Value - '0'],
+                            Text = kv.Value == '*' ? "DEL" : kv.Value == '0' ? "SPACE" : Letters[kv.Value - '0'],
                             Foreground = new SolidColorBrush(Color.FromArgb(255, 170, 170, 180)),
                             HorizontalAlignment = HorizontalAlignment.Center,
                             FontSize = 9,

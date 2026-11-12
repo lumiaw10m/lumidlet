@@ -89,8 +89,9 @@ namespace Lumidlet
             {
                 if (code == Keypad.MenuKey) { ShowMenu(); return; }
                 if (code == Keypad.AbcKey) { SetAbcMode(!abc); return; }
-                if (abc && code >= '1' && code <= '9') { Tap(code); return; }
+                if (abc && code >= '0' && code <= '9') { Tap(code); return; }
                 if (abc) Commit();
+                if (abc && code == '*') { rt?.KeyDown(Keys.Clear); return; }
                 if (!Keypad.IsDiagonal(code)) { rt?.KeyDown(code); return; }
                 if (app != null && app.DiagCombo) foreach (var k in Keypad.DiagonalArrows(code)) rt?.KeyDown(k);
                 else rt?.KeyDown(Keypad.DiagonalDigit(code));
@@ -98,7 +99,8 @@ namespace Lumidlet
             pad.Up = code =>
             {
                 if (code == Keypad.MenuKey || code == Keypad.AbcKey) return;
-                if (abc && code >= '1' && code <= '9') return;
+                if (abc && code >= '0' && code <= '9') return;
+                if (abc && code == '*') { rt?.KeyUp(Keys.Clear); return; }
                 if (!Keypad.IsDiagonal(code)) { rt?.KeyUp(code); return; }
                 if (app != null && app.DiagCombo) foreach (var k in Keypad.DiagonalArrows(code)) rt?.KeyUp(k);
                 else rt?.KeyUp(Keypad.DiagonalDigit(code));
@@ -369,7 +371,6 @@ namespace Lumidlet
             int c = char.ToLowerInvariant(seq[pendIdx]);
             pendKey = 0; pendIdx = 0;
             pad.SetAbc(abc, null);
-            if (c == ' ') c = '0';
             rt?.KeyDown(c);
             rt?.KeyUp(c);
         }
