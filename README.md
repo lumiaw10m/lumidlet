@@ -24,7 +24,7 @@ There's no Java on the phone. Lumidlet carries its own bytecode interpreter and 
    - Tap **+** and pick a `.jar` (and its `.jad`, if you have one).
    - Or open a `.jar` from File Explorer.
    - Or drop files into the app's `LocalState\inbox` folder; they're imported the next time Lumidlet starts.
-2. **Play.** Tap a game to start it. The on-screen keypad has the soft keys, the D-pad and the number keys, and you can slide your finger between keys. Touching the game screen sends pointer events.
+2. **Play.** Tap a game to start it. The on-screen keypad has the soft keys, the D-pad and the number keys, and you can slide your finger between keys. Touching the game screen sends pointer events. For games that take typed text, such as online logins, turn on **ABC** (the key between L and R on the split layout, or in the in-game menu): the number keys then type letters by multi-tap, like a phone.
 3. **Change settings.** Press and hold a game to set its screen size, MIDlet, text encoding, sound, keypad, smoothing and landscape mode. You can also **Pin to Start** from there, so the tile opens the game directly.
 4. **Use the in-game menu.** **Back** (or the ☰ key) opens it, with resume, keypad, scaling, sound, restart and exit.
 
@@ -39,7 +39,7 @@ A Bluetooth keyboard works as well:
 | F1 / F2 | Soft keys |
 | Digits | Number keys |
 | Numpad * / | `*` / `#` |
-| Letters | Typed into the game |
+| Letters | Typed into the game (as capitals) |
 | Esc | Menu |
 
 ## Building

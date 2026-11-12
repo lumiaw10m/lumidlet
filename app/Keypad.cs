@@ -14,7 +14,8 @@ namespace Lumidlet
 {
     public sealed class Keypad
     {
-        public const int MenuKey = int.MinValue, TypeKey = int.MinValue + 1;
+        public const int MenuKey = int.MinValue, AbcKey = int.MinValue + 1;
+        public static readonly string[] Letters = { " ", ".-_@", "ABC", "DEF", "GHI", "JKL", "MNO", "PQRS", "TUV", "WXYZ" };
         public const int DiagBase = -1000;
 
         public static bool IsDiagonal(int code) => code > DiagBase - 100 && code < DiagBase + 100;
@@ -35,6 +36,7 @@ namespace Lumidlet
         {
             public int Code;
             public Border View;
+            public TextBlock Label, Sub;
             public int Down;
         }
 
@@ -55,7 +57,7 @@ namespace Lumidlet
             if (Layout == Split)
                 Build(Nav, new object[,]
                 {
-                    { Lbl("L", Keys.SoftL), Lbl("⌨", TypeKey), Lbl("R", Keys.SoftR) },
+                    { Lbl("L", Keys.SoftL), Lbl("ABC", AbcKey), Lbl("R", Keys.SoftR) },
                     { Lbl("↖", DiagBase + '1'), Lbl("↑", Keys.Up), Lbl("↗", DiagBase + '3') },
                     { Lbl("←", Keys.Left), Lbl("F", Keys.Fire), Lbl("→", Keys.Right) },
                     { Lbl("↙", DiagBase + '7'), Lbl("↓", Keys.Down), Lbl("↘", DiagBase + '9') },
@@ -97,7 +99,7 @@ namespace Lumidlet
                 {
                     if (layout[r, c] == null) continue;
                     var kv = (KeyValuePair<string, int>)layout[r, c];
-                    bool soft = kv.Value == Keys.SoftL || kv.Value == Keys.SoftR || kv.Value == MenuKey || kv.Value == TypeKey;
+                    bool soft = kv.Value == Keys.SoftL || kv.Value == Keys.SoftR || kv.Value == MenuKey || kv.Value == AbcKey;
                     var tb = new TextBlock
                     {
                         Text = kv.Key,
@@ -108,24 +110,58 @@ namespace Lumidlet
                         FontFamily = new FontFamily("Segoe UI Symbol"),
                         IsHitTestVisible = false,
                     };
+                    TextBlock sub = null;
+                    UIElement child = tb;
+                    if (kv.Value >= '1' && kv.Value <= '9')
+                    {
+                        sub = new TextBlock
+                        {
+                            Text = Letters[kv.Value - '0'],
+                            Foreground = new SolidColorBrush(Color.FromArgb(255, 170, 170, 180)),
+                            HorizontalAlignment = HorizontalAlignment.Center,
+                            FontSize = 9,
+                            IsHitTestVisible = false,
+                        };
+                        var sp = new StackPanel { VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false };
+                        sp.Children.Add(tb);
+                        sp.Children.Add(sub);
+                        child = sp;
+                    }
                     var b = new Border
                     {
                         Background = new SolidColorBrush(soft ? Soft : Normal),
                         CornerRadius = new CornerRadius(8),
                         Margin = new Thickness(3),
-                        Child = tb,
+                        Child = child,
                         IsHitTestVisible = false,
                     };
                     Grid.SetRow(b, r);
                     Grid.SetColumn(b, c);
                     g.Children.Add(b);
-                    keys.Add(new Key { Code = kv.Value, View = b });
+                    keys.Add(new Key { Code = kv.Value, View = b, Label = tb, Sub = sub });
                 }
         }
 
         public void SetFontSize(double size)
         {
-            foreach (var k in keys) ((TextBlock)k.View.Child).FontSize = size;
+            foreach (var k in keys)
+            {
+                k.Label.FontSize = k.Code == AbcKey ? size * 0.7 : size;
+                if (k.Sub != null) k.Sub.FontSize = Math.Max(8, size * 0.45);
+            }
+        }
+
+        bool abcOn;
+
+        public void SetAbc(bool on, string text)
+        {
+            abcOn = on;
+            foreach (var k in keys)
+                if (k.Code == AbcKey)
+                {
+                    k.Label.Text = text ?? "ABC";
+                    if (k.Down == 0) k.View.Background = new SolidColorBrush(on ? Pressed : Soft);
+                }
         }
 
         Key HitTest(Grid g, Point p)
@@ -159,7 +195,7 @@ namespace Lumidlet
             var k = HitTest(g, e.GetCurrentPoint(g).Position);
             if (k == cur) return;
             if (cur != null) Release(cur);
-            if (k != null && (kind == 0 || (k.Code != MenuKey && k.Code != TypeKey)))
+            if (k != null && (kind == 0 || (k.Code != MenuKey && k.Code != AbcKey)))
             {
                 pointers[id] = k;
                 Press(k);
@@ -180,8 +216,8 @@ namespace Lumidlet
         {
             if (k.Down > 0 && --k.Down == 0)
             {
-                bool soft = k.Code == Keys.SoftL || k.Code == Keys.SoftR || k.Code == MenuKey || k.Code == TypeKey;
-                k.View.Background = new SolidColorBrush(soft ? Soft : Normal);
+                bool soft = k.Code == Keys.SoftL || k.Code == Keys.SoftR || k.Code == MenuKey || k.Code == AbcKey;
+                k.View.Background = new SolidColorBrush(k.Code == AbcKey && abcOn ? Pressed : soft ? Soft : Normal);
                 Up?.Invoke(k.Code);
             }
         }

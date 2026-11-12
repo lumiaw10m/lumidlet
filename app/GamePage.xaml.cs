@@ -82,19 +82,23 @@ namespace Lumidlet
                 PadLayer.Children.Remove(pad.Num);
             }
             pad = new Keypad(layout);
+            pad.SetAbc(abc, null);
             PadLayer.Children.Add(pad.Nav);
             PadLayer.Children.Add(pad.Num);
             pad.Down = code =>
             {
                 if (code == Keypad.MenuKey) { ShowMenu(); return; }
-                if (code == Keypad.TypeKey) { TypeText(); return; }
+                if (code == Keypad.AbcKey) { SetAbcMode(!abc); return; }
+                if (abc && code >= '1' && code <= '9') { Tap(code); return; }
+                if (abc) Commit();
                 if (!Keypad.IsDiagonal(code)) { rt?.KeyDown(code); return; }
                 if (app != null && app.DiagCombo) foreach (var k in Keypad.DiagonalArrows(code)) rt?.KeyDown(k);
                 else rt?.KeyDown(Keypad.DiagonalDigit(code));
             };
             pad.Up = code =>
             {
-                if (code == Keypad.MenuKey || code == Keypad.TypeKey) return;
+                if (code == Keypad.MenuKey || code == Keypad.AbcKey) return;
+                if (abc && code >= '1' && code <= '9') return;
                 if (!Keypad.IsDiagonal(code)) { rt?.KeyUp(code); return; }
                 if (app != null && app.DiagCombo) foreach (var k in Keypad.DiagonalArrows(code)) rt?.KeyUp(k);
                 else rt?.KeyUp(Keypad.DiagonalDigit(code));
@@ -119,6 +123,7 @@ namespace Lumidlet
             Application.Current.Resuming += OnResuming;
             MenuTitle.Text = app.Name;
             if (pad.Layout != app.PadLayout) AttachPad(app.PadLayout);
+            pad.SetAbc(abc, null);
             Start();
         }
 
@@ -324,43 +329,56 @@ namespace Lumidlet
             if (Menu.Visibility == Visibility.Visible || rt == null) return;
             char c = (char)e.KeyCode;
             if (c < 33 || char.IsDigit(c) || c == '*' || c == '#' || c == 127) return;
+            c = char.ToUpperInvariant(c);
             rt.KeyDown(c);
             rt.KeyUp(c);
             e.Handled = true;
         }
 
-        bool typing;
+        bool abc;
+        int pendKey, pendIdx;
+        DispatcherTimer pendTimer;
 
-        async void TypeText()
+        void SetAbcMode(bool on)
         {
-            if (typing || rt == null) return;
-            typing = true;
-            pad.ReleaseAll();
-            try
-            {
-                var box = new TextBox { AcceptsReturn = false };
-                var dlg = new ContentDialog { Title = "Type text", Content = box, PrimaryButtonText = "Send", SecondaryButtonText = "Cancel" };
-                dlg.Opened += (s, a) => box.Focus(FocusState.Programmatic);
-                if (await dlg.ShowAsync() != ContentDialogResult.Primary || string.IsNullOrEmpty(box.Text)) return;
-                var text = box.Text;
-                int i = 0;
-                var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(40) };
-                timer.Tick += (s, a) =>
-                {
-                    if (rt == null || i >= text.Length) { timer.Stop(); return; }
-                    int c = text[i++];
-                    rt.KeyDown(c);
-                    rt.KeyUp(c);
-                };
-                timer.Start();
-            }
-            finally { typing = false; }
+            Commit();
+            abc = on;
+            pad.SetAbc(abc, null);
+            UpdateMenuLabels();
         }
 
-        void Type_Click(object sender, RoutedEventArgs e)
+        void Tap(int digit)
         {
+            if (pendTimer == null)
+            {
+                pendTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(900) };
+                pendTimer.Tick += (s, a) => Commit();
+            }
+            var seq = Keypad.Letters[digit - '0'] + (char)digit;
+            if (pendKey == digit) pendIdx = (pendIdx + 1) % seq.Length;
+            else { Commit(); pendKey = digit; pendIdx = 0; }
+            pendTimer.Stop();
+            pendTimer.Start();
+            pad.SetAbc(true, seq[pendIdx].ToString());
+        }
+
+        void Commit()
+        {
+            pendTimer?.Stop();
+            if (pendKey == 0) return;
+            var seq = Keypad.Letters[pendKey - '0'] + (char)pendKey;
+            int c = seq[pendIdx];
+            pendKey = 0; pendIdx = 0;
+            pad.SetAbc(abc, null);
+            if (c == ' ') c = '0';
+            rt?.KeyDown(c);
+            rt?.KeyUp(c);
+        }
+
+        void Abc_Click(object sender, RoutedEventArgs e)
+        {
+            SetAbcMode(!abc);
             HideMenu();
-            TypeText();
         }
 
         void OnKeyDown(CoreWindow sender, KeyEventArgs e)
@@ -415,6 +433,7 @@ namespace Lumidlet
             KeypadButton.Content = app.Keypad ? "Hide keypad" : "Show keypad";
             LayoutButton.Content = "Keypad layout: " + Keypad.LayoutNames[app.PadLayout];
             LayoutButton.Visibility = app.Keypad ? Visibility.Visible : Visibility.Collapsed;
+            AbcButton.Content = abc ? "Letters on number keys: on" : "Letters on number keys: off";
             DiagButton.Content = app.DiagCombo ? "Diagonals: arrow combos" : "Diagonals: 1 3 7 9";
             DiagButton.Visibility = app.Keypad && app.PadLayout == Keypad.Split ? Visibility.Visible : Visibility.Collapsed;
             SmoothButton.Content = app.Smooth ? "Sharp pixels" : "Smooth scaling";

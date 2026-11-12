@@ -5,7 +5,7 @@
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   IgnorableNamespaces="uap mp">
 
-  <Identity Name="Lumidlet" Publisher="CN=lumiaw10m" Version="1.0.11.0" />
+  <Identity Name="Lumidlet" Publisher="CN=lumiaw10m" Version="1.0.12.0" />
 
   <mp:PhoneIdentity PhoneProductId="3f6b2c1e-8d4a-4f7e-b2a9-5c1d0e7f9a34" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
 
